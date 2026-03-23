@@ -1,75 +1,54 @@
 # Stereo Vision Distance Estimation Tool
 
-A simple Python project that estimates distance from a stereo image pair using manually selected corresponding points. The application opens `left.png` and `right.png` from the `data/` directory, lets you click the same feature in both images, then computes disparity and distance with OpenCV and NumPy.
+A small stereo-vision application that loads a left/right image pair, lets you click corresponding points, and computes depth from disparity. The project is structured as a Python package so it is run consistently with `python -m src.main` from an activated virtual environment.
 
-## Project Structure
+## Final Folder Structure
 
 ```text
 stereo_depth_project/
-│
 ├── data/
 │   ├── left.png
 │   └── right.png
-│
 ├── src/
+│   ├── __init__.py
+│   ├── config.py
 │   ├── main.py
 │   ├── stereo.py
-│   ├── utils.py
-│   └── config.py
-│
+│   └── utils.py
 ├── requirements.txt
 └── README.md
 ```
 
-## Setup
+## Setup and Run
+
+### 1. Create a virtual environment
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-cd src
-python main.py
+python3 -m venv .venv
 ```
 
-## How It Works
+### 2. Activate the virtual environment
 
-1. The program loads `data/left.png` and `data/right.png`.
-2. It shows each image in its own OpenCV window.
-3. Add your stereo pair as `data/left.png` and `data/right.png`.
-4. Click the same point in both images.
-5. The program calculates disparity using:
+```bash
+source .venv/bin/activate
+```
 
-   ```text
-   d = |x_left - x_right|
-   ```
+### 3. Install dependencies
 
-6. It estimates distance using the stereo vision depth formula:
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
 
-   ```text
-   Z = (f * B) / d
-   ```
+### 4. Run the project
 
-   Where:
-   - `Z` is the distance in meters
-   - `f` is focal length in pixels (`800` by default)
-   - `B` is the stereo camera baseline in meters (`0.05` by default)
-   - `d` is disparity in pixels
+```bash
+python -m src.main
+```
 
-7. The console prints:
-   - left and right click coordinates
-   - disparity
-   - computed distance
+## Notes
 
-8. If disparity is zero, the tool returns infinity.
-
-## Usage Notes
-
-- Place your stereo images at `data/left.png` and `data/right.png` before launching the app.
-- Click the same point in both images.
-- A red marker is drawn at each clicked point.
-- The latest computed distance is overlaid on the images briefly before the selection resets.
-- Press `q` or `Esc` to quit.
-
-## Data Directory
-
-The repository keeps an empty `data/` directory in version control. Add your own stereo pair as `data/left.png` and `data/right.png` before running the tool.
+- Do not run `python src/main.py`; the supported entry point is `python -m src.main`.
+- Keep your virtual environment activated so `python` resolves to the environment interpreter rather than `/usr/bin/python3`.
+- If OpenCV is missing, the app exits cleanly and prints: `Install with: pip install opencv-python`.
+- Place your stereo images at `data/left.png` and `data/right.png` before starting the app.

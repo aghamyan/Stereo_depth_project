@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Callable
+from pathlib import Path
+from typing import Any, Callable
 
 import cv2
-import numpy as np
 
 
-def load_image(path):
+def load_image(path: Path) -> Any:
     """Load an image from disk and raise a helpful error when it is missing."""
     image = cv2.imread(str(path))
     if image is None:
@@ -16,8 +16,7 @@ def load_image(path):
     return image
 
 
-
-def create_click_store() -> dict:
+def create_click_store() -> dict[str, Any]:
     """Create the mutable state shared by OpenCV callbacks."""
     return {
         "left": None,
@@ -26,11 +25,10 @@ def create_click_store() -> dict:
     }
 
 
-
-def make_mouse_callback(side: str, store: dict) -> Callable:
+def make_mouse_callback(side: str, store: dict[str, Any]) -> Callable[..., None]:
     """Create a mouse callback that stores the last clicked point for a side."""
 
-    def callback(event, x, y, flags, param):
+    def callback(event: int, x: int, y: int, flags: int, param: Any) -> None:
         del flags, param
         if event == cv2.EVENT_LBUTTONDOWN:
             store[side] = (x, y)
@@ -38,8 +36,12 @@ def make_mouse_callback(side: str, store: dict) -> Callable:
     return callback
 
 
-
-def annotate_image(image: np.ndarray, point, label: str | None = None, distance_text: str | None = None) -> np.ndarray:
+def annotate_image(
+    image: Any,
+    point: tuple[int, int] | None,
+    label: str | None = None,
+    distance_text: str | None = None,
+) -> Any:
     """Return a copy of the image annotated with the clicked point and labels."""
     annotated = image.copy()
 
