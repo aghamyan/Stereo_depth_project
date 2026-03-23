@@ -2,8 +2,9 @@
 
 from pathlib import Path
 
-BASELINE = 0.05
-FOCAL_LENGTH = 800
+BASELINE = 0.04
+FIELD_OF_VIEW_DEGREES = 75
+IMAGE_WIDTH = 640
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"

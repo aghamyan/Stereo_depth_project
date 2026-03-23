@@ -10,7 +10,8 @@ except ModuleNotFoundError:
 
 from src.config import (
     BASELINE,
-    FOCAL_LENGTH,
+    FIELD_OF_VIEW_DEGREES,
+    IMAGE_WIDTH,
     LEFT_IMAGE_PATH,
     QUIT_KEYS,
     RIGHT_IMAGE_PATH,
@@ -69,7 +70,13 @@ def main() -> None:
             x_left, y_left = click_store["left"]
             x_right, y_right = click_store["right"]
             disparity = compute_disparity(x_left, x_right)
-            distance = compute_distance(disparity, FOCAL_LENGTH, BASELINE)
+            distance = compute_distance(
+                x_left,
+                x_right,
+                IMAGE_WIDTH,
+                FIELD_OF_VIEW_DEGREES,
+                BASELINE,
+            )
             click_store["distance_text"] = format_distance(distance)
 
             print(f"Left click:  ({x_left}, {y_left})")
