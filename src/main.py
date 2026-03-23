@@ -2,11 +2,7 @@
 
 from __future__ import annotations
 
-try:
-    import cv2
-except ModuleNotFoundError:
-    print("OpenCV (cv2) is not installed. Install with: pip install opencv-python")
-    raise SystemExit(1)
+import cv2
 
 from src.config import (
     BASELINE,
@@ -18,17 +14,16 @@ from src.config import (
     WINDOW_LEFT,
     WINDOW_RIGHT,
 )
-from src.stereo import compute_disparity, compute_distance, find_match
-from src.utils import annotate_image, create_click_store, load_image, make_left_mouse_callback
+from src.stereo import compute_disparity, compute_distance
+from src.utils import annotate_image, create_click_store, load_image, make_mouse_callback
 
-WINDOW_SIZE = 5
-SEARCH_RANGE = 100
 
 def format_distance(distance: float) -> str:
     """Format distance text for console and image annotations."""
     if distance == float("inf"):
         return "Distance: infinity (zero disparity)"
     return f"Distance: {distance:.3f} m"
+
 
 def main() -> None:
     """Run the stereo depth estimation application."""
@@ -40,67 +35,50 @@ def main() -> None:
         raise SystemExit(1) from error
 
     click_store = create_click_store()
-    last_processed_left = None
+    last_processed_pair: tuple[tuple[int, int], tuple[int, int]] | None = None
 
     cv2.namedWindow(WINDOW_LEFT)
     cv2.namedWindow(WINDOW_RIGHT)
-    cv2.setMouseCallback(WINDOW_LEFT, make_left_mouse_callback(click_store))
+    cv2.setMouseCallback(WINDOW_LEFT, make_mouse_callback(click_store, side="left"))
+    cv2.setMouseCallback(WINDOW_RIGHT, make_mouse_callback(click_store, side="right"))
 
     print("Stereo vision distance estimation tool")
     print("Run with your virtual environment active: python main.py")
-    print("Click a point in the LEFT image to automatically find its match in the RIGHT image.")
+    print("Click corresponding objects in the LEFT and RIGHT images to measure distance.")
     print("Press 'q' or ESC to quit.")
 
     while True:
         left_point = click_store["left"]
         right_point = click_store["right"]
+        selected_pair = (
+            (left_point, right_point)
+            if left_point is not None and right_point is not None
+            else None
+        )
 
-        if left_point is not None and left_point != last_processed_left:
-            x_left, y_left = left_point
-            matched_x, best_ssd = find_match(
-                left_image,
-                right_image,
+        if selected_pair is not None and selected_pair != last_processed_pair:
+            (x_left, y_left), (x_right, y_right) = selected_pair
+            last_processed_pair = selected_pair
+
+            disparity = compute_disparity(x_left, x_right)
+            distance = compute_distance(
                 x_left,
-                y_left,
-                window_size=WINDOW_SIZE,
-                search_range=SEARCH_RANGE,
+                x_right,
+                IMAGE_WIDTH,
+                FIELD_OF_VIEW_DEGREES,
+                BASELINE,
             )
-            last_processed_left = left_point
+            click_store["distance_text"] = format_distance(distance)
+            click_store["status_text"] = "Measurement updated. Click either image to select a new pair."
 
-            if matched_x is None:
-                click_store["right"] = None
-                click_store["distance_text"] = None
-                click_store["ssd_text"] = None
-                click_store["status_text"] = "Warning: no valid match found for that point."
-                print(f"Left point: ({x_left}, {y_left})")
-                print("Warning: no valid match found.")
-                print("-" * 40)
+            print(f"Left point:  ({x_left}, {y_left})")
+            print(f"Right point: ({x_right}, {y_right})")
+            print(f"Disparity:   {disparity} pixels")
+            if distance == float("inf"):
+                print("Distance:    infinity (zero disparity)")
             else:
-                x_right = matched_x
-                y_right = y_left
-                click_store["right"] = (x_right, y_right)
-
-                disparity = compute_disparity(x_left, x_right)
-                distance = compute_distance(
-                    x_left,
-                    x_right,
-                    IMAGE_WIDTH,
-                    FIELD_OF_VIEW_DEGREES,
-                    BASELINE,
-                )
-                click_store["distance_text"] = format_distance(distance)
-                click_store["ssd_text"] = f"Best SSD: {best_ssd:.2f}"
-                click_store["status_text"] = "Auto-match complete. Click another point in the left image."
-
-                print(f"Left point:    ({x_left}, {y_left})")
-                print(f"Matched point: ({x_right}, {y_right})")
-                print(f"Disparity:     {disparity} pixels")
-                print(f"Best SSD:      {best_ssd:.2f}")
-                if distance == float("inf"):
-                    print("Distance:      infinity (zero disparity)")
-                else:
-                    print(f"Distance:      {distance:.3f} meters")
-                print("-" * 40)
+                print(f"Distance:    {distance:.3f} meters")
+            print("-" * 40)
 
         left_view = annotate_image(
             left_image,
@@ -109,17 +87,14 @@ def main() -> None:
             distance_text=click_store["distance_text"],
             status_text=click_store["status_text"],
             epipolar_y=left_point[1] if left_point else None,
-            ssd_text=click_store["ssd_text"],
         )
         right_view = annotate_image(
             right_image,
-            None,
-            label="Matched point",
+            right_point,
+            label="Right point",
             distance_text=click_store["distance_text"],
             status_text=click_store["status_text"],
-            epipolar_y=right_point[1] if right_point else (left_point[1] if left_point else None),
-            match_point=right_point,
-            ssd_text=click_store["ssd_text"],
+            epipolar_y=right_point[1] if right_point else None,
         )
 
         cv2.imshow(WINDOW_LEFT, left_view)
@@ -130,6 +105,7 @@ def main() -> None:
             break
 
     cv2.destroyAllWindows()
+
 
 if __name__ == "__main__":
     main()
