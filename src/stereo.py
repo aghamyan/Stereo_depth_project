@@ -1,12 +1,21 @@
 """Core stereo-vision calculations."""
 
-from math import inf, pi, sin
+from math import inf, radians, tan
 
 
 def compute_disparity(x_left: int, x_right: int) -> int:
     """Return the absolute horizontal disparity in pixels."""
     return abs(int(x_left) - int(x_right))
 
+
+def compute_focal_length_pixels(image_width: float, field_of_view_degrees: float) -> float:
+    """Convert horizontal FOV into focal length expressed in pixels."""
+    if image_width <= 0:
+        raise ValueError("image_width must be positive")
+    if field_of_view_degrees <= 0 or field_of_view_degrees >= 180:
+        raise ValueError("field_of_view_degrees must be in (0, 180)")
+
+    return image_width / (2 * tan(radians(field_of_view_degrees) / 2))
 
 
 def compute_distance(
@@ -16,28 +25,13 @@ def compute_distance(
     field_of_view_degrees: float,
     baseline: float,
 ) -> float:
-    """Return depth in meters using triangulation from image-space angles."""
-    if x_left == x_right:
+    """Return depth in meters using the classic stereo equation Z = (f * B) / d."""
+    if baseline <= 0:
+        raise ValueError("baseline must be positive")
+
+    disparity = compute_disparity(x_left, x_right)
+    if disparity == 0:
         return inf
 
-    beta = (180 - field_of_view_degrees) / 2
-    degrees_per_pixel = field_of_view_degrees / image_width
-
-    phi = (x_left * degrees_per_pixel) + beta
-    theta = (x_right * degrees_per_pixel) + beta
-
-    phi_rad = (180 - phi) * pi / 180
-    theta_rad = (180 - theta) * pi / 180
-
-    alpha = 180 - (phi + theta)
-    alpha_rad = alpha * pi / 180
-
-    if alpha_rad == 0:
-        return inf
-
-    numerator = baseline * sin(theta_rad) * sin(phi_rad)
-    denominator = sin(alpha_rad)
-    if denominator == 0:
-        return inf
-
-    return numerator / denominator
+    focal_length_pixels = compute_focal_length_pixels(image_width, field_of_view_degrees)
+    return (focal_length_pixels * baseline) / disparity

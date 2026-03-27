@@ -1,6 +1,6 @@
 # Stereo Vision Distance Estimation Tool
 
-A small stereo-vision application that loads a left/right image pair, lets you click corresponding points, and computes depth with angle-based triangulation derived from the camera field of view and baseline. The project is structured as a Python package so it is run consistently with `python -m src.main` from an activated virtual environment.
+A small stereo-vision application that loads a left/right image pair, lets you click corresponding points, and computes depth with the classic stereo formula `Z = (f * B) / d`, where `f` is derived from the horizontal field of view. The project is structured as a Python package so it is run consistently with `python -m src.main` from an activated virtual environment.
 
 ## Final Folder Structure
 
@@ -52,4 +52,4 @@ python -m src.main
 - Keep your virtual environment activated so `python` resolves to the environment interpreter rather than `/usr/bin/python3`.
 - If OpenCV is missing, the app exits cleanly and prints: `Install with: pip install opencv-python`.
 - Place your stereo images at `data/left.png` and `data/right.png` before starting the app.
-- Distance is computed from the clicked x-coordinates using a 75° horizontal field of view, 640-pixel image width, and 0.04 m camera baseline.
+- Distance is computed from disparity between clicked x-coordinates using `Z = (f * B) / d` with a 75° horizontal field of view, 640-pixel image width, and 0.04 m baseline.
